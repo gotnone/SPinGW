@@ -46,6 +46,30 @@ enum Paritycheck
 
 void ErrorExit(LPTSTR lpszFunction); 
 
+/**
+	\brief Get handle to a serial port
+	\param portname		name of the serial port(COM1 - COM9 or \\\\.\\COM1-COM256)
+	\return			HANDLE to the serial port
+	*/
+HANDLE getSerialPortHandle(LPCSTR portname);
+
+/**
+	\brief Get handle to a serial port
+	\param portname		name of the serial port(COM1 - COM9 or \\\\.\\COM1-COM256)
+	\param flags		pass special access flags
+	\return			HANDLE to the serial port
+	*/
+HANDLE getSerialPortHandleFlags(LPCSTR portname, int flags);
+
+/**
+	\brief Prepare dcbParams for a valid serial port HANDLE
+	\param hSerial		A valid HANDLE to the serial port
+	\param baudrate		the baudrate of this port (for example 9600)
+	\param stopbits		th nuber of stoppbits (one, onePointFive or two)
+	\param parity		the parity (even, odd, off or mark)
+	\return			DCB structure for the serial port
+	*/
+DCB prepareDCBParams(HANDLE hSerial, enum Baudrate baudrate, enum Stopbits stopbits, enum Paritycheck parity);
 
 /**
 	\brief Opens a new connection to a serial port

@@ -33,7 +33,55 @@ void ErrorExit(LPTSTR lpszFunction)
     ExitProcess(dw); 
 }
 
+/**
+	\brief Get handle to a serial port
+	\param portname		name of the serial port(COM1 - COM9 or \\\\.\\COM1-COM256)
+	\return			HANDLE to the serial port
+	*/
+HANDLE getSerialPortHandle(LPCSTR portname)
+{
+	return getSerialPortHandleFlags(portname, 0);
+}
 
+/**
+	\brief Get handle to a serial port
+	\param portname		name of the serial port(COM1 - COM9 or \\\\.\\COM1-COM256)
+	\param flags		pass special access flags
+	\return			HANDLE to the serial port
+	*/
+HANDLE getSerialPortHandleFlags(LPCSTR portname, int flags)
+{
+	DWORD accessdirection = GENERIC_READ | GENERIC_WRITE;
+	return CreateFile(portname,
+		accessdirection,
+		0,
+		0,
+		OPEN_EXISTING,
+		flags,
+		0);
+}
+
+/**
+	\brief Prepare dcbParams for a valid serial port HANDLE
+	\param hSerial		A valid HANDLE to the serial port
+	\param baudrate		the baudrate of this port (for example 9600)
+	\param stopbits		th nuber of stoppbits (one, onePointFive or two)
+	\param parity		the parity (even, odd, off or mark)
+	\return			DCB structure for the serial port
+	*/
+DCB prepareDCBParams(HANDLE hSerial, enum Baudrate baudrate, enum Stopbits stopbits, enum Paritycheck parity)
+{
+	DCB dcbSerialParams = {0};
+	dcbSerialParams.DCBlength=sizeof(dcbSerialParams);
+	if (!GetCommState(hSerial, &dcbSerialParams)) {
+		 ErrorExit("GetCommState");
+	}
+	dcbSerialParams.BaudRate=baudrate;
+	dcbSerialParams.ByteSize=8;
+	dcbSerialParams.StopBits=stopbits;
+	dcbSerialParams.Parity=parity;
+	return dcbSerialParams;
+}
 
 /**
 	\brief Opens a new connection to a serial port
@@ -59,26 +107,11 @@ HANDLE openSerialPort(LPCSTR portname,enum Baudrate baudrate, enum Stopbits stop
 	*/
 HANDLE openSerialPortFlags(LPCSTR portname,enum Baudrate baudrate, enum Stopbits stopbits, enum Paritycheck parity, int flags)
 {
-	DWORD  accessdirection =GENERIC_READ | GENERIC_WRITE;
-	HANDLE hSerial = CreateFile(portname,
-		accessdirection,
-		0,
-		0,
-		OPEN_EXISTING,
-		flags,
-		0);
+	HANDLE hSerial = getSerialPortHandleFlags(portname, flags);
 	if (hSerial == INVALID_HANDLE_VALUE) {
-		ErrorExit("CreateFile");
+		ErrorExit("Serial Port Open");
 	}
-	DCB dcbSerialParams = {0};
-	dcbSerialParams.DCBlength=sizeof(dcbSerialParams);
-	if (!GetCommState(hSerial, &dcbSerialParams)) {
-		 ErrorExit("GetCommState");
-	}
-	dcbSerialParams.BaudRate=baudrate;
-	dcbSerialParams.ByteSize=8;
-	dcbSerialParams.StopBits=stopbits;
-	dcbSerialParams.Parity=parity;
+	DCB dcbSerialParams = prepareDCBParams(hSerial, baudrate, stopbits, parity);
 	if(!SetCommState(hSerial, &dcbSerialParams)){
 		 ErrorExit("SetCommState");
 	}
